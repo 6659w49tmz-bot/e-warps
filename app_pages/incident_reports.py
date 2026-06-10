@@ -1,214 +1,378 @@
-import os
-
 import streamlit as st
-from streamlit_geolocation import streamlit_geolocation
+import folium
+from streamlit_folium import st_folium
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 
-from database import save_report, load_reports, load_photos
+from database import save_report, log_activity
 from helpers import (
     calculate_priority,
-    show_recommendations,
-    go_to_page,
-    reset_incident_form,
-    geocode_location,
-    validate_incident_report
+    validate_incident_report,
+    reset_incident_form
 )
 from ui import show_page_title, show_section_title
+
+
+# =========================
+# REVERSE GEOCODING
+# =========================
+def reverse_geocode_location(latitude, longitude):
+    try:
+        geolocator = Nominatim(user_agent="e-warps-capstone")
+
+        location = geolocator.reverse(
+            f"{latitude}, {longitude}",
+            exactly_one=True,
+            timeout=10,
+            language="en"
+        )
+
+        if not location:
+            return "", "", ""
+
+        address = location.raw.get("address", {})
+
+        barangay_area = (
+            address.get("suburb")
+            or address.get("neighbourhood")
+            or address.get("quarter")
+            or address.get("city_district")
+            or address.get("village")
+            or address.get("hamlet")
+            or address.get("road")
+            or ""
+        )
+
+        municipality_city = (
+            address.get("city")
+            or address.get("town")
+            or address.get("municipality")
+            or address.get("county")
+            or ""
+        )
+
+        full_address = location.address
+
+        return barangay_area, municipality_city, full_address
+
+    except (GeocoderTimedOut, GeocoderServiceError):
+        return "", "", ""
+
+    except Exception:
+        return "", "", ""
 
 
 def show_incident_reports():
     show_page_title(
         "Incident Reports",
-        "Submit field reports, attach photos, and record location data."
+        "Encode earthquake-related damage, casualty, and rescue information."
     )
 
-    show_section_title("Location Capture")
+    form_key = f"incident_report_form_{st.session_state.incident_form_counter}"
+
+    if "map_pin_latitude" not in st.session_state:
+        st.session_state.map_pin_latitude = 14.520000
+
+    if "map_pin_longitude" not in st.session_state:
+        st.session_state.map_pin_longitude = 121.050000
+
+    if "selected_location_method" not in st.session_state:
+        st.session_state.selected_location_method = "Manual Coordinates"
+
+    if "incident_barangay" not in st.session_state:
+        st.session_state.incident_barangay = ""
+
+    if "incident_municipality" not in st.session_state:
+        st.session_state.incident_municipality = ""
+
+    if "incident_full_address" not in st.session_state:
+        st.session_state.incident_full_address = ""
+
+    show_section_title("Location Input Method")
 
     location_method = st.radio(
-        "Select Location Method",
+        "Choose how to set the incident location",
         [
             "Use Current Device Location",
-            "Search by Barangay / City",
+            "Select Location from Map Pin",
             "Manual Coordinates"
         ],
-        horizontal=True
+        horizontal=False,
+        key="selected_location_method"
     )
 
     if location_method == "Use Current Device Location":
         st.info(
-            "Click the geolocation button below and allow location permission when the browser asks."
+            "Use this if the device browser allows location access. "
+            "On iPhone, open the app directly in Safari and allow Precise Location."
         )
 
-        location = streamlit_geolocation()
+        try:
+            from streamlit_geolocation import streamlit_geolocation
 
-        if location:
-            latitude_result = location.get("latitude")
-            longitude_result = location.get("longitude")
+            location = streamlit_geolocation()
 
-            if latitude_result is not None and longitude_result is not None:
-                st.session_state.current_latitude = float(latitude_result)
-                st.session_state.current_longitude = float(longitude_result)
+            if location:
+                latitude_from_device = location.get("latitude")
+                longitude_from_device = location.get("longitude")
 
-                st.success(
-                    f"Current device location captured: "
-                    f"{st.session_state.current_latitude:.6f}, "
-                    f"{st.session_state.current_longitude:.6f}"
-                )
+                if latitude_from_device is not None and longitude_from_device is not None:
+                    st.session_state.current_latitude = float(latitude_from_device)
+                    st.session_state.current_longitude = float(longitude_from_device)
 
-    elif location_method == "Search by Barangay / City":
+                    barangay_area, municipality_city, full_address = reverse_geocode_location(
+                        st.session_state.current_latitude,
+                        st.session_state.current_longitude
+                    )
+
+                    if barangay_area:
+                        st.session_state.incident_barangay = barangay_area
+
+                    if municipality_city:
+                        st.session_state.incident_municipality = municipality_city
+
+                    if full_address:
+                        st.session_state.incident_full_address = full_address
+
+                    st.success("Device location captured successfully.")
+
+                    st.write(
+                        f"Latitude: `{st.session_state.current_latitude:.6f}`"
+                    )
+                    st.write(
+                        f"Longitude: `{st.session_state.current_longitude:.6f}`"
+                    )
+
+                    if st.session_state.incident_full_address:
+                        st.caption(
+                            f"Detected address: {st.session_state.incident_full_address}"
+                        )
+
+                else:
+                    st.warning("Location permission may not have been granted yet.")
+            else:
+                st.warning("No device location received yet.")
+
+        except Exception as error:
+            st.warning("Device location is not available on this browser/device.")
+            st.caption(str(error))
+
+    elif location_method == "Select Location from Map Pin":
         st.info(
-            "Type the barangay and city/municipality, then click Find Coordinates."
+            "Tap or click the incident location on the map, then click "
+            "**Use Selected Map Pin**."
         )
 
-        search_col1, search_col2 = st.columns(2)
+        map_center_latitude = st.session_state.current_latitude
+        map_center_longitude = st.session_state.current_longitude
 
-        with search_col1:
-            search_barangay = st.text_input("Barangay / Location Name for Search")
+        if map_center_latitude == 0 or map_center_longitude == 0:
+            map_center_latitude = st.session_state.map_pin_latitude
+            map_center_longitude = st.session_state.map_pin_longitude
 
-        with search_col2:
-            search_municipality = st.text_input("Municipality / City for Search")
+        incident_map = folium.Map(
+            location=[
+                map_center_latitude,
+                map_center_longitude
+            ],
+            zoom_start=14
+        )
 
-        if st.button("📍 Find Coordinates from Location Name", use_container_width=True):
-            lat, lon, address = geocode_location(
-                search_barangay,
-                search_municipality
+        folium.Marker(
+            [
+                st.session_state.map_pin_latitude,
+                st.session_state.map_pin_longitude
+            ],
+            popup="Selected Incident Location",
+            tooltip="Selected Incident Location"
+        ).add_to(incident_map)
+
+        map_data = st_folium(
+            incident_map,
+            height=450,
+            use_container_width=True
+        )
+
+        if map_data and map_data.get("last_clicked"):
+            clicked_latitude = map_data["last_clicked"]["lat"]
+            clicked_longitude = map_data["last_clicked"]["lng"]
+
+            st.session_state.map_pin_latitude = float(clicked_latitude)
+            st.session_state.map_pin_longitude = float(clicked_longitude)
+
+            st.success("Map pin selected.")
+
+            st.write(
+                f"Selected Latitude: `{st.session_state.map_pin_latitude:.6f}`"
+            )
+            st.write(
+                f"Selected Longitude: `{st.session_state.map_pin_longitude:.6f}`"
             )
 
-            if lat is not None and lon is not None:
-                st.session_state.current_latitude = lat
-                st.session_state.current_longitude = lon
+        if st.button("Use Selected Map Pin", use_container_width=True):
+            st.session_state.current_latitude = st.session_state.map_pin_latitude
+            st.session_state.current_longitude = st.session_state.map_pin_longitude
 
-                st.success(f"Coordinates found: {lat:.6f}, {lon:.6f}")
-                st.write(f"**Matched Address:** {address}")
+            barangay_area, municipality_city, full_address = reverse_geocode_location(
+                st.session_state.current_latitude,
+                st.session_state.current_longitude
+            )
+
+            if barangay_area:
+                st.session_state.incident_barangay = barangay_area
+
+            if municipality_city:
+                st.session_state.incident_municipality = municipality_city
+
+            if full_address:
+                st.session_state.incident_full_address = full_address
+
+            st.success("Map pin location applied to this incident report.")
+
+            if full_address:
+                st.info(f"Detected address: {full_address}")
             else:
-                st.error(
-                    "No coordinates found. Try adding province/region or use manual coordinates."
+                st.warning(
+                    "Coordinates were applied, but the address could not be detected. "
+                    "You may manually type the barangay and city."
                 )
 
+            st.rerun()
+
     else:
-        st.info("Enter the coordinates manually in the form below.")
+        st.info("Manually input the latitude and longitude of the incident location.")
 
     st.divider()
 
-    show_section_title("Field Report Form")
+    show_section_title("Incident Report Form")
 
-    form_key = f"incident_form_{st.session_state.incident_form_counter}"
+    with st.form(form_key):
+        barangay = st.text_input(
+            "Barangay / Area",
+            value=st.session_state.incident_barangay
+        )
 
-    with st.form(form_key, clear_on_submit=True):
-        col_a, col_b = st.columns(2)
+        municipality = st.text_input(
+            "Municipality / City",
+            value=st.session_state.incident_municipality
+        )
 
-        with col_a:
-            barangay = st.text_input("Barangay")
-
-        with col_b:
-            municipality = st.text_input("Municipality / City")
-
-        coord_col1, coord_col2 = st.columns(2)
-
-        with coord_col1:
-            latitude = st.number_input(
-                "Latitude",
-                value=float(st.session_state.current_latitude),
-                format="%.6f"
+        if st.session_state.incident_full_address:
+            st.caption(
+                f"Detected address: {st.session_state.incident_full_address}"
             )
 
-        with coord_col2:
-            longitude = st.number_input(
-                "Longitude",
-                value=float(st.session_state.current_longitude),
-                format="%.6f"
-            )
+        st.markdown("#### Coordinates")
 
-        st.divider()
+        latitude = st.number_input(
+            "Latitude",
+            min_value=-90.000000,
+            max_value=90.000000,
+            value=float(st.session_state.current_latitude),
+            format="%.6f"
+        )
 
-        impact_col1, impact_col2 = st.columns(2)
+        longitude = st.number_input(
+            "Longitude",
+            min_value=-180.000000,
+            max_value=180.000000,
+            value=float(st.session_state.current_longitude),
+            format="%.6f"
+        )
 
-        with impact_col1:
+        st.markdown("#### Casualty and Rescue Information")
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
             casualties = st.number_input(
-                "Number of Casualties",
+                "Casualties",
                 min_value=0,
-                value=0
+                step=1
             )
 
-            trapped = st.number_input(
-                "Number of Trapped Persons",
-                min_value=0,
-                value=0
-            )
-
-        with impact_col2:
+        with col2:
             injured = st.number_input(
-                "Number of Injured Persons",
+                "Injured",
                 min_value=0,
-                value=0
+                step=1
             )
 
+        with col3:
+            trapped = st.number_input(
+                "Trapped / Missing",
+                min_value=0,
+                step=1
+            )
+
+        st.markdown("#### Damage Information")
+
+        col4, col5 = st.columns(2)
+
+        with col4:
             damaged_buildings = st.number_input(
                 "Damaged Buildings",
                 min_value=0,
-                value=0
+                step=1
             )
 
-        road_status = st.selectbox(
-            "Road Status",
-            [
-                "Passable",
-                "Partially Blocked",
-                "Blocked"
-            ]
+        with col5:
+            road_status = st.selectbox(
+                "Road Status",
+                [
+                    "Passable",
+                    "Partially Blocked",
+                    "Not Passable",
+                    "Unknown"
+                ]
+            )
+
+        remarks = st.text_area(
+            "Remarks / Situation Description"
         )
 
         uploaded_photos = st.file_uploader(
-            "Upload Incident Photos",
-            type=[
-                "jpg",
-                "jpeg",
-                "png"
-            ],
+            "Attach Incident Photos",
+            type=["jpg", "jpeg", "png"],
             accept_multiple_files=True
         )
 
-        remarks = st.text_area("Remarks")
-
-        submit_report = st.form_submit_button("Submit Report")
-
-    col_clear, col_dash = st.columns(2)
-
-    with col_clear:
-        if st.button("🧹 Clear Report Input Fields", use_container_width=True):
-            reset_incident_form(st)
-            st.rerun()
-
-    with col_dash:
-        if st.button("Go Back to Dashboard", use_container_width=True):
-            go_to_page(st, "Dashboard")
-            st.rerun()
-
-    if submit_report:
-        errors = validate_incident_report(
-            barangay,
-            municipality,
+        priority_score, priority = calculate_priority(
             casualties,
             injured,
             trapped,
             damaged_buildings,
-            remarks,
-            uploaded_photos
+            road_status
         )
 
-        if errors:
-            for error in errors:
+        st.markdown("#### AI-Assisted Priority Assessment")
+
+        if priority == "High":
+            st.error(f"Priority: {priority} | Score: {priority_score}")
+        elif priority == "Medium":
+            st.warning(f"Priority: {priority} | Score: {priority_score}")
+        else:
+            st.success(f"Priority: {priority} | Score: {priority_score}")
+
+        submitted = st.form_submit_button(
+            "Submit Incident Report",
+            use_container_width=True
+        )
+
+    if submitted:
+        validation_errors = validate_incident_report(
+            barangay,
+            municipality,
+            latitude,
+            longitude
+        )
+
+        if validation_errors:
+            for error in validation_errors:
                 st.error(error)
 
         else:
-            score, priority = calculate_priority(
-                casualties,
-                injured,
-                trapped,
-                damaged_buildings,
-                road_status
-            )
-
-            report_id = save_report(
+            save_report(
                 barangay,
                 municipality,
                 latitude,
@@ -218,52 +382,22 @@ def show_incident_reports():
                 trapped,
                 damaged_buildings,
                 road_status,
-                score,
+                priority_score,
                 priority,
                 remarks,
                 uploaded_photos
             )
 
-            st.success("Incident report saved permanently.")
+            log_activity(
+                "Incident Report Submitted",
+                f"{barangay}, {municipality} | Priority: {priority}"
+            )
 
-            show_section_title("Submitted Report")
+            st.success("Incident report submitted successfully.")
 
-            submitted_df = load_reports()
-            submitted_df = submitted_df[submitted_df["ID"] == report_id]
+            st.session_state.incident_barangay = ""
+            st.session_state.incident_municipality = ""
+            st.session_state.incident_full_address = ""
 
-            st.dataframe(submitted_df, use_container_width=True)
-
-            photos_df = load_photos(report_id)
-
-            if not photos_df.empty:
-                show_section_title("Uploaded Photos")
-
-                for _, photo in photos_df.iterrows():
-                    if os.path.exists(photo["filepath"]):
-                        st.image(
-                            photo["filepath"],
-                            caption=photo["filename"],
-                            use_container_width=True
-                        )
-
-            show_section_title("AI-Assisted Command Recommendations")
-            show_recommendations(st, priority)
-
-            st.divider()
-
-            col1, col2, col3 = st.columns(3)
-
-            with col1:
-                if st.button("➕ Submit Another Incident Report", use_container_width=True):
-                    reset_incident_form(st)
-                    st.rerun()
-
-            with col2:
-                if st.button("🚨 View Prioritization", use_container_width=True):
-                    go_to_page(st, "Prioritization")
-                    st.rerun()
-
-            with col3:
-                if st.button("🗺️ View GIS Map", use_container_width=True):
-                    go_to_page(st, "GIS Map")
-                    st.rerun()
+            reset_incident_form(st)
+            st.rerun()
