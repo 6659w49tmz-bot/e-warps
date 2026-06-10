@@ -154,25 +154,22 @@ def show_recommendations(st, priority):
 
 
 # =========================
-# PAGE / FORM HELPERS
+# SAFE PAGE NAVIGATION
 # =========================
 def go_to_page(st, page_name):
-    st.session_state.selected_page = page_name
-    st.session_state.navigation_page = page_name
+    st.session_state.pending_page = page_name
 
 
 def reset_alert_form(st):
     st.session_state.alert_form_counter += 1
-    st.session_state.selected_page = "Earthquake Alerts"
-    st.session_state.navigation_page = "Earthquake Alerts"
+    st.session_state.pending_page = "Earthquake Alerts"
 
 
 def reset_incident_form(st):
     st.session_state.incident_form_counter += 1
     st.session_state.current_latitude = 0.000000
     st.session_state.current_longitude = 0.000000
-    st.session_state.selected_page = "Incident Reports"
-    st.session_state.navigation_page = "Incident Reports"
+    st.session_state.pending_page = "Incident Reports"
 
 
 # =========================

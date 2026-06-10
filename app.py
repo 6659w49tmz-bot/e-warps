@@ -101,6 +101,9 @@ if "selected_page" not in st.session_state:
 if "navigation_page" not in st.session_state:
     st.session_state.navigation_page = "Dashboard"
 
+if "pending_page" not in st.session_state:
+    st.session_state.pending_page = None
+
 if "incident_form_counter" not in st.session_state:
     st.session_state.incident_form_counter = 0
 
@@ -129,6 +132,7 @@ def complete_login(username):
     st.session_state.user_role = user_record["role"]
     st.session_state.selected_page = "Dashboard"
     st.session_state.navigation_page = "Dashboard"
+    st.session_state.pending_page = None
     st.session_state.login_error = ""
 
 
@@ -157,6 +161,7 @@ def logout_user():
     st.session_state.user_role = "Commander"
     st.session_state.selected_page = "Dashboard"
     st.session_state.navigation_page = "Dashboard"
+    st.session_state.pending_page = None
 
 
 # =========================
@@ -252,6 +257,15 @@ pages = ROLE_PAGES.get(
     st.session_state.user_role,
     ROLE_PAGES["Admin"]
 )
+
+if st.session_state.pending_page is not None:
+    requested_page = st.session_state.pending_page
+
+    if requested_page in pages:
+        st.session_state.selected_page = requested_page
+        st.session_state.navigation_page = requested_page
+
+    st.session_state.pending_page = None
 
 if st.session_state.selected_page not in pages:
     st.session_state.selected_page = pages[0]
