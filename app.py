@@ -35,7 +35,7 @@ st.set_page_config(
     page_title="E-WARPS",
     page_icon="🌏",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 apply_custom_css()
@@ -222,10 +222,27 @@ if not st.session_state.authenticated:
 
 
 # =========================
-# CALLBACKS
+# ROLE-BASED PAGES
 # =========================
-def update_selected_page():
-    st.session_state.selected_page = st.session_state.navigation_page
+pages = ROLE_PAGES.get(
+    st.session_state.user_role,
+    ROLE_PAGES["Admin"]
+)
+
+if st.session_state.pending_page is not None:
+    requested_page = st.session_state.pending_page
+
+    if requested_page in pages:
+        st.session_state.selected_page = requested_page
+        st.session_state.navigation_page = requested_page
+
+    st.session_state.pending_page = None
+
+if st.session_state.selected_page not in pages:
+    st.session_state.selected_page = pages[0]
+
+if st.session_state.navigation_page not in pages:
+    st.session_state.navigation_page = st.session_state.selected_page
 
 
 # =========================
@@ -249,37 +266,28 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
+st.sidebar.markdown("### Navigation")
+
+for page_name in pages:
+    if page_name == st.session_state.selected_page:
+        button_label = f"▶ {page_name}"
+    else:
+        button_label = page_name
+
+    if st.sidebar.button(
+        button_label,
+        key=f"nav_button_{page_name}",
+        use_container_width=True
+    ):
+        st.session_state.selected_page = page_name
+        st.session_state.navigation_page = page_name
+        st.rerun()
+
+st.sidebar.divider()
+
 if st.sidebar.button("Logout", use_container_width=True):
     logout_user()
     st.rerun()
-
-pages = ROLE_PAGES.get(
-    st.session_state.user_role,
-    ROLE_PAGES["Admin"]
-)
-
-if st.session_state.pending_page is not None:
-    requested_page = st.session_state.pending_page
-
-    if requested_page in pages:
-        st.session_state.selected_page = requested_page
-        st.session_state.navigation_page = requested_page
-
-    st.session_state.pending_page = None
-
-if st.session_state.selected_page not in pages:
-    st.session_state.selected_page = pages[0]
-
-if st.session_state.navigation_page not in pages:
-    st.session_state.navigation_page = st.session_state.selected_page
-
-st.sidebar.radio(
-    "Navigation",
-    pages,
-    index=pages.index(st.session_state.selected_page),
-    key="navigation_page",
-    on_change=update_selected_page
-)
 
 page = st.session_state.selected_page
 
