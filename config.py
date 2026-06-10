@@ -5,6 +5,7 @@ UPLOAD_FOLDER = "uploads"
 ASSETS_FOLDER = "assets"
 LOGO_FILE = os.path.join(ASSETS_FOLDER, "logo.png")
 
+
 ROLE_OPTIONS = [
     "Commander",
     "Operations Officer",
@@ -12,9 +13,9 @@ ROLE_OPTIONS = [
     "Admin"
 ]
 
+
 ALL_PAGES = [
     "Dashboard",
-    "About / System Information",
     "Earthquake Alerts",
     "Incident Reports",
     "Prioritization",
@@ -25,24 +26,25 @@ ALL_PAGES = [
     "Edit/Delete Reports",
     "Export Reports",
     "Activity Log",
-    "Settings"
+    "Settings",
+    "About / System Information"
 ]
+
 
 ROLE_PAGES = {
     "Commander": [
         "Dashboard",
-        "About / System Information",
         "Prioritization",
         "GIS Map",
         "Command Recommendations",
         "Situation Report",
         "Resources",
         "Export Reports",
-        "Activity Log"
+        "Activity Log",
+        "About / System Information"
     ],
     "Operations Officer": [
         "Dashboard",
-        "About / System Information",
         "Earthquake Alerts",
         "Incident Reports",
         "Prioritization",
@@ -52,14 +54,15 @@ ROLE_PAGES = {
         "Resources",
         "Edit/Delete Reports",
         "Export Reports",
-        "Activity Log"
+        "Activity Log",
+        "About / System Information"
     ],
     "Responder": [
         "Dashboard",
-        "About / System Information",
         "Incident Reports",
         "GIS Map",
-        "Situation Report"
+        "Situation Report",
+        "About / System Information"
     ],
     "Admin": ALL_PAGES
 }
