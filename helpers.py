@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from io import BytesIO
 
@@ -5,9 +6,17 @@ from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle,
+    Image
+)
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
+from reportlab.lib.utils import ImageReader
 
 
 # =========================
@@ -202,7 +211,7 @@ def geocode_location(barangay, municipality):
 
 
 # =========================
-# SITREP
+# SITREP TEXT
 # =========================
 def generate_sitrep_text(reports_df, alerts_df):
     now_text = datetime.now().strftime("%d %B %Y %H%MH")
@@ -252,6 +261,25 @@ def generate_sitrep_text(reports_df, alerts_df):
     else:
         alert_text = "No earthquake alert has been recorded in the system."
 
+    incident_details = []
+
+    for _, report in sorted_df.iterrows():
+        detail = (
+            f"- {report['Barangay']}, {report['Municipality / City']} | "
+            f"Priority: {report['Priority']} | "
+            f"Score: {report['Priority Score']} | "
+            f"Casualties: {report['Casualties']} | "
+            f"Injured: {report['Injured']} | "
+            f"Trapped: {report['Trapped Persons']} | "
+            f"Damaged Buildings: {report['Damaged Buildings']} | "
+            f"Road Status: {report['Road Status']} | "
+            f"Remarks: {report['Remarks']}"
+        )
+
+        incident_details.append(detail)
+
+    incident_details_text = "\n".join(incident_details)
+
     sitrep = f"""
 SITUATION REPORT
 
@@ -271,7 +299,11 @@ Priority classification:
 - Moderate areas: {moderate_count}
 - Low priority areas: {low_count}
 
+Highest priority area:
 The highest priority area is {top['Barangay']}, {top['Municipality / City']}, classified as {top['Priority']} with a priority score of {top['Priority Score']}.
+
+Per-area incident details:
+{incident_details_text}
 
 Recommended command action:
 Immediate attention should be given to the highest priority areas. For critical areas, the commander may consider activation of the Incident Command Post, deployment of QRF, SAR, medical teams, and engineering assessment teams, and coordination with LGU/MDRRMO and barangay officials.
@@ -282,14 +314,49 @@ This report is AI-assisted and intended to support command decision-making. Fina
     return sitrep.strip()
 
 
+# =========================
+# PDF PHOTO HELPER
+# =========================
+def create_pdf_image(image_path, max_width=230, max_height=170):
+    if not os.path.exists(image_path):
+        return None
+
+    try:
+        image_reader = ImageReader(image_path)
+        original_width, original_height = image_reader.getSize()
+
+        width_ratio = max_width / original_width
+        height_ratio = max_height / original_height
+        scale = min(width_ratio, height_ratio)
+
+        final_width = original_width * scale
+        final_height = original_height * scale
+
+        return Image(
+            image_path,
+            width=final_width,
+            height=final_height
+        )
+
+    except Exception:
+        return None
+
+
+# =========================
+# SITREP PDF
+# =========================
 def generate_pdf_sitrep(
     sitrep_text,
     reports_df,
+    photos_by_report=None,
     prepared_by="",
     prepared_role="",
     reviewed_by="",
     approved_by=""
 ):
+    if photos_by_report is None:
+        photos_by_report = {}
+
     buffer = BytesIO()
 
     doc = SimpleDocTemplate(
@@ -321,20 +388,33 @@ def generate_pdf_sitrep(
     elements.append(Paragraph(meta_text, styles["BodyText"]))
     elements.append(Spacer(1, 14))
 
+    elements.append(
+        Paragraph(
+            "Narrative Situation Summary",
+            styles["Heading2"]
+        )
+    )
+
     for line in sitrep_text.split("\n"):
         if line.strip() == "":
             elements.append(Spacer(1, 8))
         else:
+            safe_line = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
             elements.append(
-                Paragraph(line, styles["BodyText"])
+                Paragraph(safe_line, styles["BodyText"])
             )
 
     elements.append(Spacer(1, 16))
 
     if not reports_df.empty:
+        sorted_reports_df = reports_df.sort_values(
+            by="Priority Score",
+            ascending=False
+        )
+
         elements.append(
             Paragraph(
-                "Incident Report Summary",
+                "Incident Report Summary Table",
                 styles["Heading2"]
             )
         )
@@ -351,7 +431,7 @@ def generate_pdf_sitrep(
             ]
         ]
 
-        for _, row in reports_df.iterrows():
+        for _, row in sorted_reports_df.iterrows():
             table_data.append(
                 [
                     str(row["Barangay"]),
@@ -382,8 +462,137 @@ def generate_pdf_sitrep(
         )
 
         elements.append(table)
+        elements.append(Spacer(1, 18))
 
-    elements.append(Spacer(1, 40))
+        elements.append(
+            Paragraph(
+                "Incident Details and Photos",
+                styles["Heading2"]
+            )
+        )
+
+        for _, report in sorted_reports_df.iterrows():
+            report_id = int(report["ID"])
+
+            incident_title = (
+                f"{report['Barangay']}, {report['Municipality / City']} "
+                f"- {report['Priority']}"
+            )
+
+            elements.append(
+                Paragraph(
+                    incident_title,
+                    styles["Heading3"]
+                )
+            )
+
+            details_data = [
+                ["Priority Score", str(report["Priority Score"])],
+                ["Casualties", str(report["Casualties"])],
+                ["Injured", str(report["Injured"])],
+                ["Trapped Persons", str(report["Trapped Persons"])],
+                ["Damaged Buildings", str(report["Damaged Buildings"])],
+                ["Road Status", str(report["Road Status"])],
+                ["Latitude", str(report["Latitude"])],
+                ["Longitude", str(report["Longitude"])],
+                ["Remarks", str(report["Remarks"])],
+            ]
+
+            details_table = Table(
+                details_data,
+                colWidths=[120, 350]
+            )
+
+            details_table.setStyle(
+                TableStyle(
+                    [
+                        ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                        ("BACKGROUND", (0, 0), (0, -1), colors.whitesmoke),
+                        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, -1), 8),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ]
+                )
+            )
+
+            elements.append(details_table)
+            elements.append(Spacer(1, 8))
+
+            report_photos = photos_by_report.get(report_id, [])
+
+            if report_photos:
+                elements.append(
+                    Paragraph(
+                        "Attached Incident Photos:",
+                        styles["BodyText"]
+                    )
+                )
+
+                photo_cells = []
+                current_row = []
+
+                for photo in report_photos:
+                    photo_path = photo.get("filepath")
+                    photo_filename = photo.get("filename", "Incident Photo")
+
+                    pdf_image = create_pdf_image(photo_path)
+
+                    if pdf_image is not None:
+                        photo_block = [
+                            pdf_image,
+                            Paragraph(
+                                str(photo_filename),
+                                styles["BodyText"]
+                            )
+                        ]
+
+                        current_row.append(photo_block)
+
+                        if len(current_row) == 2:
+                            photo_cells.append(current_row)
+                            current_row = []
+
+                if current_row:
+                    photo_cells.append(current_row)
+
+                if photo_cells:
+                    photo_table = Table(
+                        photo_cells,
+                        colWidths=[250, 250]
+                    )
+
+                    photo_table.setStyle(
+                        TableStyle(
+                            [
+                                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                                ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                            ]
+                        )
+                    )
+
+                    elements.append(photo_table)
+
+                else:
+                    elements.append(
+                        Paragraph(
+                            "Photos were recorded but could not be loaded into the PDF.",
+                            styles["BodyText"]
+                        )
+                    )
+
+            else:
+                elements.append(
+                    Paragraph(
+                        "No photos attached for this incident.",
+                        styles["BodyText"]
+                    )
+                )
+
+            elements.append(Spacer(1, 16))
+
+    elements.append(Spacer(1, 30))
 
     signature_data = [
         ["Prepared By:", prepared_by if prepared_by else "________________________"],

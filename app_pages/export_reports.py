@@ -1,8 +1,34 @@
 import streamlit as st
 
-from database import load_reports, load_alerts, log_activity
+from database import load_reports, load_alerts, load_photos, log_activity
 from helpers import generate_sitrep_text, generate_pdf_sitrep
 from ui import show_page_title, show_section_title
+
+
+def build_photos_by_report(reports_df):
+    photos_by_report = {}
+
+    if reports_df.empty:
+        return photos_by_report
+
+    for _, report in reports_df.iterrows():
+        report_id = int(report["ID"])
+        photos_df = load_photos(report_id)
+
+        photos = []
+
+        if not photos_df.empty:
+            for _, photo in photos_df.iterrows():
+                photos.append(
+                    {
+                        "filename": photo["filename"],
+                        "filepath": photo["filepath"]
+                    }
+                )
+
+        photos_by_report[report_id] = photos
+
+    return photos_by_report
 
 
 def show_export_reports():
@@ -12,6 +38,7 @@ def show_export_reports():
     )
 
     reports_df = load_reports()
+    photos_by_report = build_photos_by_report(reports_df)
 
     if not reports_df.empty:
         show_section_title("Incident Report Dataset")
@@ -48,6 +75,7 @@ def show_export_reports():
         pdf_buffer = generate_pdf_sitrep(
             sitrep_text,
             reports_df,
+            photos_by_report=photos_by_report,
             prepared_by=prepared_by,
             prepared_role=prepared_role,
             reviewed_by=reviewed_by,
@@ -55,15 +83,15 @@ def show_export_reports():
         )
 
         st.download_button(
-            label="Download SITREP as PDF",
+            label="Download SITREP as PDF with Photos",
             data=pdf_buffer,
-            file_name="e_warps_sitrep.pdf",
+            file_name="e_warps_sitrep_with_photos.pdf",
             mime="application/pdf",
             use_container_width=True
         )
 
         st.info(
-            "Photos are saved in the uploads folder and are not included inside the CSV or PDF file."
+            "Incident photos are now included in the SITREP PDF when the uploaded photo files are available."
         )
 
         log_activity(
