@@ -2,7 +2,6 @@ import streamlit as st
 
 from config import (
     ROLE_PAGES,
-    USERS,
     ensure_upload_folder,
     ensure_assets_folder
 )
@@ -44,6 +43,41 @@ apply_custom_css()
 ensure_upload_folder()
 ensure_assets_folder()
 initialize_database()
+
+
+# =========================
+# USERS FROM SECRETS
+# =========================
+def get_users():
+    try:
+        return dict(st.secrets["users"])
+
+    except Exception:
+        return {
+            "admin": {
+                "password": "admin123",
+                "name": "System Administrator",
+                "role": "Admin"
+            },
+            "commander": {
+                "password": "commander123",
+                "name": "Commander",
+                "role": "Commander"
+            },
+            "ops": {
+                "password": "ops123",
+                "name": "Operations Officer",
+                "role": "Operations Officer"
+            },
+            "responder": {
+                "password": "responder123",
+                "name": "Field Responder",
+                "role": "Responder"
+            }
+        }
+
+
+USERS = get_users()
 
 
 # =========================
@@ -157,7 +191,7 @@ if not st.session_state.authenticated:
         st.divider()
 
         st.markdown("### Demo Mode")
-        st.caption("Use these buttons for quick capstone demonstration.")
+        st.caption("Use these buttons for quick system demonstration.")
 
         demo_col1, demo_col2 = st.columns(2)
 

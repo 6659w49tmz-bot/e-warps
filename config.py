@@ -58,39 +58,10 @@ ROLE_PAGES = {
         "Dashboard",
         "About / System Information",
         "Incident Reports",
-        "GIS Map"
+        "GIS Map",
+        "Situation Report"
     ],
     "Admin": ALL_PAGES
-}
-
-# Simple prototype users.
-# For capstone demo only. Later, this can be moved to SQLite with hashed passwords.
-USERS = {
-    "commander": {
-        "password": "commander123",
-        "name": "Commander",
-        "role": "Commander"
-    },
-    "ops": {
-        "password": "ops123",
-        "name": "Operations Officer",
-        "role": "Operations Officer"
-    },
-    "responder": {
-        "password": "responder123",
-        "name": "Field Responder",
-        "role": "Responder"
-    },
-    "admin": {
-        "password": "admin123",
-        "name": "System Administrator",
-        "role": "Admin"
-    },
-    "reybernales": {
-        "password": "@Berns2210",
-        "name": "2LT REY ANTHONY F BERNALES (CE) PA",
-        "role": "Admin"
-    }
 }
 
 
