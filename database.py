@@ -1,255 +1,256 @@
 import os
 import uuid
-import sqlite3
+import tempfile
+
 import pandas as pd
-from datetime import datetime
-
+import requests
 import streamlit as st
-
-from config import DB_FILE, UPLOAD_FOLDER
-
-
-# =========================
-# CONNECTION
-# =========================
-def get_connection():
-    return sqlite3.connect(DB_FILE)
-
-
-def column_exists(cursor, table_name, column_name):
-    cursor.execute(f"PRAGMA table_info({table_name})")
-    columns = cursor.fetchall()
-
-    for column in columns:
-        if column[1] == column_name:
-            return True
-
-    return False
+from supabase import create_client
 
 
 # =========================
-# DATABASE INITIALIZATION
+# SUPABASE CONNECTION
 # =========================
+def get_supabase_client():
+    try:
+        supabase_url = st.secrets["supabase"]["url"]
+        supabase_key = st.secrets["supabase"]["service_role_key"]
+
+        return create_client(
+            supabase_url,
+            supabase_key
+        )
+
+    except Exception as error:
+        st.error(
+            "Supabase connection is not configured. "
+            "Please check Streamlit Secrets."
+        )
+        st.exception(error)
+        return None
+
+
+def get_storage_bucket():
+    try:
+        return st.secrets["supabase"]["bucket"]
+
+    except Exception:
+        return "incident-photos"
+
+
 def initialize_database():
-    conn = get_connection()
-    cursor = conn.cursor()
+    # Tables are already created in Supabase SQL Editor.
+    # This function remains here because app.py calls it.
+    return
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS alerts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            magnitude REAL,
-            epicenter TEXT,
-            depth INTEGER,
-            alert_time TEXT,
-            remarks TEXT
+
+# =========================
+# PHOTO TEMP FILE HELPER
+# =========================
+def download_photo_to_temp(public_url, storage_path):
+    if not public_url:
+        return ""
+
+    try:
+        file_name = os.path.basename(storage_path)
+
+        if not file_name:
+            file_name = f"{uuid.uuid4()}.jpg"
+
+        temp_folder = os.path.join(
+            tempfile.gettempdir(),
+            "ewarps_photos"
         )
-        """
-    )
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            report_time TEXT,
-            barangay TEXT,
-            municipality TEXT,
-            latitude REAL,
-            longitude REAL,
-            casualties INTEGER,
-            injured INTEGER,
-            trapped INTEGER,
-            damaged_buildings INTEGER,
-            road_status TEXT,
-            priority_score INTEGER,
-            priority TEXT,
-            remarks TEXT
+        if not os.path.exists(temp_folder):
+            os.makedirs(temp_folder)
+
+        temp_path = os.path.join(
+            temp_folder,
+            file_name
         )
-        """
-    )
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS photos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            report_id INTEGER,
-            filename TEXT,
-            filepath TEXT,
-            FOREIGN KEY(report_id) REFERENCES reports(id)
+        if os.path.exists(temp_path):
+            return temp_path
+
+        response = requests.get(
+            public_url,
+            timeout=15
         )
-        """
-    )
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS resources (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            resource_name TEXT,
-            available_quantity INTEGER,
-            remarks TEXT
-        )
-        """
-    )
+        if response.status_code == 200:
+            with open(temp_path, "wb") as file:
+                file.write(response.content)
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS activity_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            log_time TEXT,
-            user_role TEXT,
-            action TEXT,
-            details TEXT
-        )
-        """
-    )
+            return temp_path
 
-    if not column_exists(cursor, "reports", "latitude"):
-        cursor.execute("ALTER TABLE reports ADD COLUMN latitude REAL")
+        return public_url
 
-    if not column_exists(cursor, "reports", "longitude"):
-        cursor.execute("ALTER TABLE reports ADD COLUMN longitude REAL")
-
-    conn.commit()
-    conn.close()
+    except Exception:
+        return public_url
 
 
 # =========================
 # ACTIVITY LOG
 # =========================
 def log_activity(action, details=""):
-    conn = get_connection()
-    cursor = conn.cursor()
+    client = get_supabase_client()
 
-    user_role = st.session_state.get("user_role", "Unknown")
+    if client is None:
+        return
 
-    cursor.execute(
-        """
-        INSERT INTO activity_log (
-            log_time,
-            user_role,
-            action,
-            details
-        )
-        VALUES (?, ?, ?, ?)
-        """,
-        (
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            user_role,
-            action,
-            details
-        )
+    user_role = st.session_state.get(
+        "user_role",
+        "Unknown"
     )
 
-    conn.commit()
-    conn.close()
+    client.table("activity_log").insert(
+        {
+            "action": action,
+            "details": details,
+            "user_role": user_role
+        }
+    ).execute()
 
 
 def load_activity_log():
-    conn = get_connection()
+    client = get_supabase_client()
 
-    df = pd.read_sql_query(
-        """
-        SELECT
-            id AS ID,
-            log_time AS "Date/Time",
-            user_role AS "User Role",
-            action AS Action,
-            details AS Details
-        FROM activity_log
-        ORDER BY id DESC
-        """,
-        conn
+    columns = [
+        "ID",
+        "Action",
+        "Details",
+        "User Role",
+        "Date/Time"
+    ]
+
+    if client is None:
+        return pd.DataFrame(columns=columns)
+
+    response = client.table("activity_log").select("*").order(
+        "created_at",
+        desc=True
+    ).execute()
+
+    rows = response.data or []
+
+    if not rows:
+        return pd.DataFrame(columns=columns)
+
+    df = pd.DataFrame(rows)
+
+    df = df.rename(
+        columns={
+            "id": "ID",
+            "action": "Action",
+            "details": "Details",
+            "user_role": "User Role",
+            "created_at": "Date/Time"
+        }
     )
 
-    conn.close()
-    return df
+    return df[columns]
 
 
 def clear_activity_log():
-    conn = get_connection()
-    cursor = conn.cursor()
+    client = get_supabase_client()
 
-    cursor.execute("DELETE FROM activity_log")
+    if client is None:
+        return
 
-    conn.commit()
-    conn.close()
+    client.table("activity_log").delete().gt(
+        "id",
+        0
+    ).execute()
 
 
 # =========================
-# ALERTS
+# EARTHQUAKE ALERTS
 # =========================
 def save_alert(magnitude, epicenter, depth, alert_time, remarks):
-    conn = get_connection()
-    cursor = conn.cursor()
+    client = get_supabase_client()
 
-    cursor.execute(
-        """
-        INSERT INTO alerts (
-            magnitude,
-            epicenter,
-            depth,
-            alert_time,
-            remarks
-        )
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (
-            magnitude,
-            epicenter,
-            depth,
-            alert_time,
-            remarks
-        )
-    )
+    if client is None:
+        return
 
-    conn.commit()
-    conn.close()
+    client.table("alerts").insert(
+        {
+            "magnitude": magnitude,
+            "epicenter": epicenter,
+            "depth": depth,
+            "alert_time": alert_time,
+            "remarks": remarks
+        }
+    ).execute()
 
     log_activity(
         "Earthquake Alert Saved",
-        f"Magnitude {magnitude}, Epicenter {epicenter}"
+        f"Magnitude {magnitude} at {epicenter}"
     )
 
 
 def load_alerts():
-    conn = get_connection()
+    client = get_supabase_client()
 
-    df = pd.read_sql_query(
-        """
-        SELECT
-            id AS ID,
-            magnitude AS Magnitude,
-            epicenter AS Epicenter,
-            depth AS Depth,
-            alert_time AS "Date/Time",
-            remarks AS Remarks
-        FROM alerts
-        ORDER BY id DESC
-        """,
-        conn
+    columns = [
+        "ID",
+        "Magnitude",
+        "Epicenter",
+        "Depth",
+        "Date/Time",
+        "Remarks",
+        "Created At"
+    ]
+
+    if client is None:
+        return pd.DataFrame(columns=columns)
+
+    response = client.table("alerts").select("*").order(
+        "created_at",
+        desc=True
+    ).execute()
+
+    rows = response.data or []
+
+    if not rows:
+        return pd.DataFrame(columns=columns)
+
+    df = pd.DataFrame(rows)
+
+    df = df.rename(
+        columns={
+            "id": "ID",
+            "magnitude": "Magnitude",
+            "epicenter": "Epicenter",
+            "depth": "Depth",
+            "alert_time": "Date/Time",
+            "remarks": "Remarks",
+            "created_at": "Created At"
+        }
     )
 
-    conn.close()
-    return df
+    return df[columns]
 
 
 def clear_alerts():
-    conn = get_connection()
-    cursor = conn.cursor()
+    client = get_supabase_client()
 
-    cursor.execute("DELETE FROM alerts")
+    if client is None:
+        return
 
-    conn.commit()
-    conn.close()
+    client.table("alerts").delete().gt(
+        "id",
+        0
+    ).execute()
 
     log_activity(
-        "All Earthquake Alerts Cleared",
-        "All alerts removed"
+        "Earthquake Alerts Cleared",
+        "All earthquake alerts were cleared"
     )
 
 
 # =========================
-# REPORTS
+# INCIDENT REPORTS
 # =========================
 def save_report(
     barangay,
@@ -261,85 +262,79 @@ def save_report(
     trapped,
     damaged_buildings,
     road_status,
-    priority_score,
+    score,
     priority,
     remarks,
     uploaded_photos
 ):
-    conn = get_connection()
-    cursor = conn.cursor()
+    client = get_supabase_client()
+    bucket = get_storage_bucket()
 
-    report_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+    if client is None:
+        return None
 
-    cursor.execute(
-        """
-        INSERT INTO reports (
-            report_time,
-            barangay,
-            municipality,
-            latitude,
-            longitude,
-            casualties,
-            injured,
-            trapped,
-            damaged_buildings,
-            road_status,
-            priority_score,
-            priority,
-            remarks
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            report_time,
-            barangay,
-            municipality,
-            latitude,
-            longitude,
-            casualties,
-            injured,
-            trapped,
-            damaged_buildings,
-            road_status,
-            priority_score,
-            priority,
-            remarks
-        )
-    )
+    report_response = client.table("reports").insert(
+        {
+            "barangay": barangay,
+            "municipality": municipality,
+            "latitude": latitude,
+            "longitude": longitude,
+            "casualties": casualties,
+            "injured": injured,
+            "trapped": trapped,
+            "damaged_buildings": damaged_buildings,
+            "road_status": road_status,
+            "priority_score": score,
+            "priority": priority,
+            "remarks": remarks
+        }
+    ).execute()
 
-    report_id = cursor.lastrowid
+    report_rows = report_response.data or []
+
+    if not report_rows:
+        return None
+
+    report_id = report_rows[0]["id"]
 
     if uploaded_photos:
-        for photo in uploaded_photos:
-            file_extension = os.path.splitext(photo.name)[1]
-            safe_filename = f"{uuid.uuid4()}{file_extension}"
-            filepath = os.path.join(UPLOAD_FOLDER, safe_filename)
+        for uploaded_photo in uploaded_photos:
+            original_filename = uploaded_photo.name
+            file_extension = os.path.splitext(original_filename)[1]
 
-            with open(filepath, "wb") as file:
-                file.write(photo.getbuffer())
+            if not file_extension:
+                file_extension = ".jpg"
 
-            cursor.execute(
-                """
-                INSERT INTO photos (
-                    report_id,
-                    filename,
-                    filepath
-                )
-                VALUES (?, ?, ?)
-                """,
-                (
-                    report_id,
-                    photo.name,
-                    filepath
-                )
+            storage_filename = f"{uuid.uuid4()}{file_extension}"
+            storage_path = f"report_{report_id}/{storage_filename}"
+
+            file_bytes = uploaded_photo.getvalue()
+            content_type = uploaded_photo.type or "application/octet-stream"
+
+            client.storage.from_(bucket).upload(
+                path=storage_path,
+                file=file_bytes,
+                file_options={
+                    "content-type": content_type
+                }
             )
 
-    conn.commit()
-    conn.close()
+            public_url = client.storage.from_(bucket).get_public_url(
+                storage_path
+            )
+
+            client.table("photos").insert(
+                {
+                    "report_id": report_id,
+                    "filename": original_filename,
+                    "storage_path": storage_path,
+                    "public_url": public_url
+                }
+            ).execute()
 
     log_activity(
         "Incident Report Saved",
-        f"{barangay}, {municipality}, Priority: {priority}"
+        f"{barangay}, {municipality} - {priority}"
     )
 
     return report_id
@@ -356,153 +351,223 @@ def update_report(
     trapped,
     damaged_buildings,
     road_status,
-    priority_score,
+    score,
     priority,
     remarks
 ):
-    conn = get_connection()
-    cursor = conn.cursor()
+    client = get_supabase_client()
 
-    cursor.execute(
-        """
-        UPDATE reports
-        SET
-            barangay = ?,
-            municipality = ?,
-            latitude = ?,
-            longitude = ?,
-            casualties = ?,
-            injured = ?,
-            trapped = ?,
-            damaged_buildings = ?,
-            road_status = ?,
-            priority_score = ?,
-            priority = ?,
-            remarks = ?
-        WHERE id = ?
-        """,
-        (
-            barangay,
-            municipality,
-            latitude,
-            longitude,
-            casualties,
-            injured,
-            trapped,
-            damaged_buildings,
-            road_status,
-            priority_score,
-            priority,
-            remarks,
-            report_id
-        )
-    )
+    if client is None:
+        return
 
-    conn.commit()
-    conn.close()
+    client.table("reports").update(
+        {
+            "barangay": barangay,
+            "municipality": municipality,
+            "latitude": latitude,
+            "longitude": longitude,
+            "casualties": casualties,
+            "injured": injured,
+            "trapped": trapped,
+            "damaged_buildings": damaged_buildings,
+            "road_status": road_status,
+            "priority_score": score,
+            "priority": priority,
+            "remarks": remarks
+        }
+    ).eq(
+        "id",
+        report_id
+    ).execute()
 
     log_activity(
         "Incident Report Updated",
-        f"Report ID {report_id}, {barangay}, Priority: {priority}"
+        f"Report ID {report_id} updated"
     )
 
 
 def delete_report(report_id):
-    photos_df = load_photos(report_id)
+    client = get_supabase_client()
+    bucket = get_storage_bucket()
 
-    for _, photo in photos_df.iterrows():
-        filepath = photo["filepath"]
+    if client is None:
+        return
 
-        if os.path.exists(filepath):
-            os.remove(filepath)
+    photos_response = client.table("photos").select("*").eq(
+        "report_id",
+        report_id
+    ).execute()
 
-    conn = get_connection()
-    cursor = conn.cursor()
+    photos = photos_response.data or []
 
-    cursor.execute("DELETE FROM photos WHERE report_id = ?", (report_id,))
-    cursor.execute("DELETE FROM reports WHERE id = ?", (report_id,))
+    storage_paths = []
 
-    conn.commit()
-    conn.close()
+    for photo in photos:
+        storage_path = photo.get("storage_path")
+
+        if storage_path:
+            storage_paths.append(storage_path)
+
+    if storage_paths:
+        client.storage.from_(bucket).remove(storage_paths)
+
+    client.table("reports").delete().eq(
+        "id",
+        report_id
+    ).execute()
 
     log_activity(
         "Incident Report Deleted",
-        f"Report ID {report_id}"
+        f"Report ID {report_id} deleted"
     )
 
 
 def load_reports():
-    conn = get_connection()
+    client = get_supabase_client()
 
-    df = pd.read_sql_query(
-        """
-        SELECT
-            reports.id AS ID,
-            reports.report_time AS "Date/Time",
-            reports.barangay AS Barangay,
-            reports.municipality AS "Municipality / City",
-            reports.latitude AS Latitude,
-            reports.longitude AS Longitude,
-            reports.casualties AS Casualties,
-            reports.injured AS Injured,
-            reports.trapped AS "Trapped Persons",
-            reports.damaged_buildings AS "Damaged Buildings",
-            reports.road_status AS "Road Status",
-            reports.priority_score AS "Priority Score",
-            reports.priority AS Priority,
-            reports.remarks AS Remarks,
-            COUNT(photos.id) AS "Photo Count"
-        FROM reports
-        LEFT JOIN photos ON reports.id = photos.report_id
-        GROUP BY reports.id
-        ORDER BY reports.priority_score DESC
-        """,
-        conn
+    columns = [
+        "ID",
+        "Barangay",
+        "Municipality / City",
+        "Latitude",
+        "Longitude",
+        "Casualties",
+        "Injured",
+        "Trapped Persons",
+        "Damaged Buildings",
+        "Road Status",
+        "Priority Score",
+        "Priority",
+        "Remarks",
+        "Date/Time"
+    ]
+
+    if client is None:
+        return pd.DataFrame(columns=columns)
+
+    response = client.table("reports").select("*").order(
+        "priority_score",
+        desc=True
+    ).execute()
+
+    rows = response.data or []
+
+    if not rows:
+        return pd.DataFrame(columns=columns)
+
+    df = pd.DataFrame(rows)
+
+    df = df.rename(
+        columns={
+            "id": "ID",
+            "barangay": "Barangay",
+            "municipality": "Municipality / City",
+            "latitude": "Latitude",
+            "longitude": "Longitude",
+            "casualties": "Casualties",
+            "injured": "Injured",
+            "trapped": "Trapped Persons",
+            "damaged_buildings": "Damaged Buildings",
+            "road_status": "Road Status",
+            "priority_score": "Priority Score",
+            "priority": "Priority",
+            "remarks": "Remarks",
+            "created_at": "Date/Time"
+        }
     )
 
-    conn.close()
-    return df
+    return df[columns]
 
 
 def load_photos(report_id):
-    conn = get_connection()
+    client = get_supabase_client()
 
-    df = pd.read_sql_query(
-        """
-        SELECT
-            filename,
-            filepath
-        FROM photos
-        WHERE report_id = ?
-        """,
-        conn,
-        params=(report_id,)
-    )
+    columns = [
+        "ID",
+        "report_id",
+        "filename",
+        "filepath",
+        "storage_path",
+        "public_url",
+        "Created At"
+    ]
 
-    conn.close()
-    return df
+    if client is None:
+        return pd.DataFrame(columns=columns)
+
+    response = client.table("photos").select("*").eq(
+        "report_id",
+        report_id
+    ).order(
+        "created_at",
+        desc=False
+    ).execute()
+
+    rows = response.data or []
+
+    if not rows:
+        return pd.DataFrame(columns=columns)
+
+    prepared_rows = []
+
+    for row in rows:
+        public_url = row.get("public_url", "")
+        storage_path = row.get("storage_path", "")
+
+        temp_or_url_path = download_photo_to_temp(
+            public_url,
+            storage_path
+        )
+
+        prepared_rows.append(
+            {
+                "ID": row.get("id"),
+                "report_id": row.get("report_id"),
+                "filename": row.get("filename"),
+                "filepath": temp_or_url_path,
+                "storage_path": storage_path,
+                "public_url": public_url,
+                "Created At": row.get("created_at")
+            }
+        )
+
+    return pd.DataFrame(prepared_rows)
 
 
 def clear_reports():
-    conn = get_connection()
-    cursor = conn.cursor()
+    client = get_supabase_client()
+    bucket = get_storage_bucket()
 
-    cursor.execute("DELETE FROM photos")
-    cursor.execute("DELETE FROM reports")
+    if client is None:
+        return
 
-    conn.commit()
-    conn.close()
+    photos_response = client.table("photos").select("*").execute()
+    photos = photos_response.data or []
 
-    if os.path.exists(UPLOAD_FOLDER):
-        for filename in os.listdir(UPLOAD_FOLDER):
-            filepath = os.path.join(UPLOAD_FOLDER, filename)
+    storage_paths = []
 
-            if os.path.isfile(filepath):
-                os.remove(filepath)
+    for photo in photos:
+        storage_path = photo.get("storage_path")
+
+        if storage_path:
+            storage_paths.append(storage_path)
+
+    if storage_paths:
+        client.storage.from_(bucket).remove(storage_paths)
+
+    client.table("photos").delete().gt(
+        "id",
+        0
+    ).execute()
+
+    client.table("reports").delete().gt(
+        "id",
+        0
+    ).execute()
 
     log_activity(
-        "All Incident Reports Cleared",
-        "All reports and uploaded photos removed"
+        "Incident Reports Cleared",
+        "All incident reports and photos were cleared"
     )
 
 
@@ -510,112 +575,116 @@ def clear_reports():
 # RESOURCES
 # =========================
 def save_resource(resource_name, available_quantity, remarks):
-    conn = get_connection()
-    cursor = conn.cursor()
+    client = get_supabase_client()
 
-    cursor.execute(
-        """
-        INSERT INTO resources (
-            resource_name,
-            available_quantity,
-            remarks
-        )
-        VALUES (?, ?, ?)
-        """,
-        (
-            resource_name,
-            available_quantity,
-            remarks
-        )
-    )
+    if client is None:
+        return
 
-    conn.commit()
-    conn.close()
+    client.table("resources").insert(
+        {
+            "resource_name": resource_name,
+            "available_quantity": available_quantity,
+            "remarks": remarks
+        }
+    ).execute()
 
     log_activity(
-        "Resource Added",
-        f"{resource_name}: {available_quantity}"
+        "Resource Saved",
+        f"{resource_name} saved"
     )
 
 
 def load_resources():
-    conn = get_connection()
+    client = get_supabase_client()
 
-    df = pd.read_sql_query(
-        """
-        SELECT
-            id AS ID,
-            resource_name AS Resource,
-            available_quantity AS Quantity,
-            remarks AS Remarks
-        FROM resources
-        ORDER BY resource_name ASC
-        """,
-        conn
+    columns = [
+        "ID",
+        "Resource",
+        "Quantity",
+        "Remarks",
+        "Created At"
+    ]
+
+    if client is None:
+        return pd.DataFrame(columns=columns)
+
+    response = client.table("resources").select("*").order(
+        "created_at",
+        desc=True
+    ).execute()
+
+    rows = response.data or []
+
+    if not rows:
+        return pd.DataFrame(columns=columns)
+
+    df = pd.DataFrame(rows)
+
+    df = df.rename(
+        columns={
+            "id": "ID",
+            "resource_name": "Resource",
+            "available_quantity": "Quantity",
+            "remarks": "Remarks",
+            "created_at": "Created At"
+        }
     )
 
-    conn.close()
-    return df
+    return df[columns]
 
 
 def update_resource(resource_id, resource_name, available_quantity, remarks):
-    conn = get_connection()
-    cursor = conn.cursor()
+    client = get_supabase_client()
 
-    cursor.execute(
-        """
-        UPDATE resources
-        SET
-            resource_name = ?,
-            available_quantity = ?,
-            remarks = ?
-        WHERE id = ?
-        """,
-        (
-            resource_name,
-            available_quantity,
-            remarks,
-            resource_id
-        )
-    )
+    if client is None:
+        return
 
-    conn.commit()
-    conn.close()
+    client.table("resources").update(
+        {
+            "resource_name": resource_name,
+            "available_quantity": available_quantity,
+            "remarks": remarks
+        }
+    ).eq(
+        "id",
+        resource_id
+    ).execute()
 
     log_activity(
         "Resource Updated",
-        f"{resource_name}: {available_quantity}"
+        f"Resource ID {resource_id} updated"
     )
 
 
 def delete_resource(resource_id):
-    conn = get_connection()
-    cursor = conn.cursor()
+    client = get_supabase_client()
 
-    cursor.execute(
-        "DELETE FROM resources WHERE id = ?",
-        (resource_id,)
-    )
+    if client is None:
+        return
 
-    conn.commit()
-    conn.close()
+    client.table("resources").delete().eq(
+        "id",
+        resource_id
+    ).execute()
 
     log_activity(
         "Resource Deleted",
-        f"Resource ID {resource_id}"
+        f"Resource ID {resource_id} deleted"
     )
 
 
 def clear_resources():
-    conn = get_connection()
-    cursor = conn.cursor()
+    client = get_supabase_client()
 
-    cursor.execute("DELETE FROM resources")
+    if client is None:
+        return
 
-    conn.commit()
-    conn.close()
+    client.table("resources").delete().gt(
+        "id",
+        0
+    ).execute()
 
     log_activity(
-        "All Resources Cleared",
-        "All resources removed"
+        "Resources Cleared",
+        "All resources were cleared"
     )

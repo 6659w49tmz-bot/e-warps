@@ -5,3 +5,5 @@ streamlit-folium
 streamlit-geolocation
 geopy
 reportlab
+supabase
+requests
