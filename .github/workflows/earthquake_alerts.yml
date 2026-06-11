@@ -30,3 +30,4 @@ jobs:
         run: |
           python automate_alerts.py
           
+# trigger refresh
