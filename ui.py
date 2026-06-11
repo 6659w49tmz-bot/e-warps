@@ -140,57 +140,84 @@ def apply_custom_css():
         }
 
         /* =========================
-           Input / Form Visibility Fix
+           Strong Light Mode Input Visibility
         ========================= */
         div[data-testid="stTextInput"] div[data-baseweb="input"],
-        div[data-testid="stNumberInput"] div[data-baseweb="input"] {
-            border: 1.8px solid #94a3b8 !important;
-            border-radius: 11px !important;
-            background-color: #ffffff !important;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08) !important;
+        div[data-testid="stNumberInput"] div[data-baseweb="input"],
+        div[data-testid="stDateInput"] div[data-baseweb="input"],
+        div[data-testid="stTimeInput"] div[data-baseweb="input"] {
+            background-color: #f8fafc !important;
+            border: 2px solid #64748b !important;
+            border-radius: 12px !important;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08) !important;
         }
 
         div[data-testid="stTextInput"] div[data-baseweb="input"] input,
-        div[data-testid="stNumberInput"] div[data-baseweb="input"] input {
-            background-color: #ffffff !important;
-            color: #111827 !important;
-            border-radius: 11px !important;
+        div[data-testid="stNumberInput"] div[data-baseweb="input"] input,
+        div[data-testid="stDateInput"] div[data-baseweb="input"] input,
+        div[data-testid="stTimeInput"] div[data-baseweb="input"] input {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+            border-radius: 12px !important;
         }
 
         div[data-testid="stTextInput"] div[data-baseweb="input"]:hover,
-        div[data-testid="stNumberInput"] div[data-baseweb="input"]:hover {
-            border-color: #64748b !important;
+        div[data-testid="stNumberInput"] div[data-baseweb="input"]:hover,
+        div[data-testid="stDateInput"] div[data-baseweb="input"]:hover,
+        div[data-testid="stTimeInput"] div[data-baseweb="input"]:hover {
+            border-color: #334155 !important;
+            background-color: #ffffff !important;
         }
 
         div[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within,
-        div[data-testid="stNumberInput"] div[data-baseweb="input"]:focus-within {
-            border: 2px solid #ef4444 !important;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16) !important;
+        div[data-testid="stNumberInput"] div[data-baseweb="input"]:focus-within,
+        div[data-testid="stDateInput"] div[data-baseweb="input"]:focus-within,
+        div[data-testid="stTimeInput"] div[data-baseweb="input"]:focus-within {
+            border: 2.5px solid #ef4444 !important;
+            background-color: #ffffff !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+        }
+
+        div[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within input,
+        div[data-testid="stNumberInput"] div[data-baseweb="input"]:focus-within input,
+        div[data-testid="stDateInput"] div[data-baseweb="input"]:focus-within input,
+        div[data-testid="stTimeInput"] div[data-baseweb="input"]:focus-within input {
+            background-color: #ffffff !important;
         }
 
         div[data-testid="stTextArea"] div[data-baseweb="textarea"] {
-            border: 1.8px solid #94a3b8 !important;
-            border-radius: 11px !important;
-            background-color: #ffffff !important;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08) !important;
+            background-color: #f8fafc !important;
+            border: 2px solid #64748b !important;
+            border-radius: 12px !important;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08) !important;
         }
 
         div[data-testid="stTextArea"] div[data-baseweb="textarea"] textarea {
-            background-color: #ffffff !important;
-            color: #111827 !important;
-            border-radius: 11px !important;
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+            border-radius: 12px !important;
         }
 
         div[data-testid="stTextArea"] div[data-baseweb="textarea"]:focus-within {
-            border: 2px solid #ef4444 !important;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16) !important;
+            border: 2.5px solid #ef4444 !important;
+            background-color: #ffffff !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+        }
+
+        div[data-testid="stTextArea"] div[data-baseweb="textarea"]:focus-within textarea {
+            background-color: #ffffff !important;
         }
 
         div[data-baseweb="select"] > div {
-            border: 1.8px solid #94a3b8 !important;
-            border-radius: 11px !important;
+            background-color: #f8fafc !important;
+            border: 2px solid #64748b !important;
+            border-radius: 12px !important;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08) !important;
+        }
+
+        div[data-baseweb="select"] > div:hover {
+            border-color: #334155 !important;
             background-color: #ffffff !important;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08) !important;
         }
 
         input,
@@ -200,6 +227,7 @@ def apply_custom_css():
 
         label {
             font-weight: 600 !important;
+            color: #111827 !important;
         }
 
         /* =========================
@@ -234,16 +262,16 @@ def apply_custom_css():
         }
 
         div[data-testid="stForm"] {
-            border: 1.8px solid #cbd5e1 !important;
+            border: 2px solid #94a3b8 !important;
             border-radius: 16px !important;
             padding: 1rem !important;
-            background-color: rgba(255, 255, 255, 0.92) !important;
-            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08) !important;
+            background-color: rgba(255, 255, 255, 0.96) !important;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10) !important;
         }
 
         div[data-testid="stForm"] button {
-            border: 1.8px solid #94a3b8 !important;
-            border-radius: 11px !important;
+            border: 2px solid #64748b !important;
+            border-radius: 12px !important;
             background-color: #ffffff !important;
             color: #111827 !important;
             font-weight: 600 !important;
@@ -252,6 +280,7 @@ def apply_custom_css():
         div[data-testid="stForm"] button:hover {
             border-color: #ef4444 !important;
             color: #ef4444 !important;
+            background-color: #fff5f5 !important;
         }
 
         /* =========================
@@ -447,32 +476,38 @@ def apply_custom_css():
 
             div[data-testid="stForm"] {
                 background-color: rgba(17, 24, 39, 0.90) !important;
-                border: 1.8px solid rgba(148, 163, 184, 0.45) !important;
+                border: 2px solid rgba(148, 163, 184, 0.50) !important;
                 box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25) !important;
             }
 
             div[data-testid="stTextInput"] div[data-baseweb="input"],
-            div[data-testid="stNumberInput"] div[data-baseweb="input"] {
+            div[data-testid="stNumberInput"] div[data-baseweb="input"],
+            div[data-testid="stDateInput"] div[data-baseweb="input"],
+            div[data-testid="stTimeInput"] div[data-baseweb="input"] {
                 background-color: #1f2937 !important;
-                border: 1.8px solid #64748b !important;
-                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+                border: 2px solid #64748b !important;
+                box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25) !important;
             }
 
             div[data-testid="stTextInput"] div[data-baseweb="input"] input,
-            div[data-testid="stNumberInput"] div[data-baseweb="input"] input {
+            div[data-testid="stNumberInput"] div[data-baseweb="input"] input,
+            div[data-testid="stDateInput"] div[data-baseweb="input"] input,
+            div[data-testid="stTimeInput"] div[data-baseweb="input"] input {
                 background-color: #1f2937 !important;
                 color: #f9fafb !important;
             }
 
             div[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within,
-            div[data-testid="stNumberInput"] div[data-baseweb="input"]:focus-within {
-                border: 2px solid #f87171 !important;
+            div[data-testid="stNumberInput"] div[data-baseweb="input"]:focus-within,
+            div[data-testid="stDateInput"] div[data-baseweb="input"]:focus-within,
+            div[data-testid="stTimeInput"] div[data-baseweb="input"]:focus-within {
+                border: 2.5px solid #f87171 !important;
                 box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18) !important;
             }
 
             div[data-testid="stTextArea"] div[data-baseweb="textarea"] {
                 background-color: #1f2937 !important;
-                border: 1.8px solid #64748b !important;
+                border: 2px solid #64748b !important;
             }
 
             div[data-testid="stTextArea"] div[data-baseweb="textarea"] textarea {
@@ -483,13 +518,13 @@ def apply_custom_css():
             div[data-baseweb="select"] > div {
                 background-color: #1f2937 !important;
                 color: #f9fafb !important;
-                border: 1.8px solid #64748b !important;
+                border: 2px solid #64748b !important;
             }
 
             div[data-testid="stForm"] button {
                 background-color: #1f2937 !important;
                 color: #f9fafb !important;
-                border: 1.8px solid #64748b !important;
+                border: 2px solid #64748b !important;
             }
 
             div[data-testid="stForm"] button:hover {
@@ -502,7 +537,10 @@ def apply_custom_css():
                 caret-color: #f87171 !important;
             }
 
-            label,
+            label {
+                color: #f9fafb !important;
+            }
+
             p,
             span,
             div {
