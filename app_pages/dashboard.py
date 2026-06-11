@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
 
+from config import ROLE_PAGES
 from database import load_reports, load_alerts
 from helpers import go_to_page, reset_alert_form, reset_incident_form
 from ui import show_page_title, show_status_legend, show_section_title
@@ -19,6 +20,11 @@ def show_dashboard():
     affected_areas = reports_df["Barangay"].nunique() if not reports_df.empty else 0
     critical_areas = len(reports_df[reports_df["Priority"] == "🔴 CRITICAL"]) if not reports_df.empty else 0
     total_alerts = len(alerts_df)
+
+    allowed_pages = ROLE_PAGES.get(
+        st.session_state.user_role,
+        ROLE_PAGES["Admin"]
+    )
 
     show_section_title("Operational Overview")
 
@@ -102,27 +108,62 @@ def show_dashboard():
 
     show_section_title("Quick Actions")
 
-    quick_cols = st.columns(4)
+    quick_actions = []
 
-    with quick_cols[0]:
-        if st.button("➕ Add Alert", use_container_width=True):
-            reset_alert_form(st)
-            st.rerun()
+    if "Earthquake Alerts" in allowed_pages:
+        quick_actions.append(
+            {
+                "label": "➕ Add Alert",
+                "page": "Earthquake Alerts",
+                "type": "alert"
+            }
+        )
 
-    with quick_cols[1]:
-        if st.button("📝 Add Report", use_container_width=True):
-            reset_incident_form(st)
-            st.rerun()
+    if "Incident Reports" in allowed_pages:
+        quick_actions.append(
+            {
+                "label": "📝 Add Report",
+                "page": "Incident Reports",
+                "type": "report"
+            }
+        )
 
-    with quick_cols[2]:
-        if st.button("🚨 Prioritization", use_container_width=True):
-            go_to_page(st, "Prioritization")
-            st.rerun()
+    if "Prioritization" in allowed_pages:
+        quick_actions.append(
+            {
+                "label": "🚨 Prioritization",
+                "page": "Prioritization",
+                "type": "page"
+            }
+        )
 
-    with quick_cols[3]:
-        if st.button("📄 SITREP", use_container_width=True):
-            go_to_page(st, "Situation Report")
-            st.rerun()
+    if "Situation Report" in allowed_pages:
+        quick_actions.append(
+            {
+                "label": "📄 SITREP",
+                "page": "Situation Report",
+                "type": "page"
+            }
+        )
+
+    if quick_actions:
+        action_cols = st.columns(len(quick_actions))
+
+        for index, action in enumerate(quick_actions):
+            with action_cols[index]:
+                if st.button(action["label"], use_container_width=True):
+                    if action["type"] == "alert":
+                        reset_alert_form(st)
+
+                    elif action["type"] == "report":
+                        reset_incident_form(st)
+
+                    else:
+                        go_to_page(st, action["page"])
+
+                    st.rerun()
+    else:
+        st.info("No quick actions available for this role.")
 
     st.divider()
 

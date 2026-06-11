@@ -12,8 +12,8 @@ def apply_custom_css():
         """
         <style>
         /* =========================
-           Hide only unnecessary Streamlit Cloud UI
-           Do NOT hide header because sidebar button is there
+           Keep Streamlit header visible
+           This keeps the sidebar button available.
         ========================= */
         #MainMenu {
             visibility: hidden;
@@ -23,48 +23,28 @@ def apply_custom_css():
             visibility: hidden;
         }
 
-        [data-testid="stToolbar"] {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        [data-testid="stDecoration"] {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        [data-testid="stStatusWidget"] {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        .stDeployButton {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        a[href*="github.com"] {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        button[title="View app source"],
-        button[title="Fork this app"],
-        button[title="Main menu"] {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
         [data-testid="stHeader"],
         header {
             background: transparent !important;
         }
 
         /* =========================
-           Base App Styling
+           FORCE DARK MODE
         ========================= */
         :root {
-            color-scheme: light dark;
+            color-scheme: dark !important;
+        }
+
+        html,
+        body,
+        [data-testid="stAppViewContainer"],
+        [data-testid="stApp"] {
+            background-color: #0f172a !important;
+            color: #e5e7eb !important;
+        }
+
+        [data-testid="stSidebar"] {
+            background-color: #111827 !important;
         }
 
         .main {
@@ -72,172 +52,183 @@ def apply_custom_css():
         }
 
         .block-container {
-            padding-top: 2rem;
+            padding-top: 2.5rem;
             padding-bottom: 2rem;
             max-width: 1200px;
         }
 
-        h1, h2, h3 {
+        h1, h2, h3, h4, h5, h6 {
+            color: #f9fafb !important;
             font-weight: 700;
         }
 
+        p, span, div, label {
+            color: inherit;
+        }
+
+        hr {
+            border-color: rgba(148, 163, 184, 0.25) !important;
+        }
+
         .small-muted {
-            color: #6b7280;
+            color: #9ca3af;
             font-size: 0.9rem;
         }
 
+        /* =========================
+           Cards / Containers
+        ========================= */
         .section-card {
             padding: 1.2rem;
             border-radius: 16px;
-            border: 1px solid rgba(31, 41, 55, 0.18);
-            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            background: rgba(17, 24, 39, 0.85);
             margin-bottom: 1rem;
         }
 
         .metric-card {
             padding: 1rem;
             border-radius: 16px;
-            border: 1px solid rgba(31, 41, 55, 0.18);
-            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            background: rgba(17, 24, 39, 0.85);
             text-align: center;
         }
 
         .metric-title {
             font-size: 0.9rem;
-            color: #6b7280;
+            color: #9ca3af;
             margin-bottom: 0.25rem;
         }
 
         .metric-value {
             font-size: 1.8rem;
             font-weight: 700;
+            color: #f9fafb;
         }
 
         /* =========================
-           STRONG LIGHT MODE INPUT VISIBILITY
-           This targets both wrapper and actual input box.
+           Inputs / Forms
         ========================= */
         div[data-testid="stForm"] {
-            border: 2px solid #94a3b8 !important;
+            background-color: rgba(17, 24, 39, 0.92) !important;
+            border: 1.8px solid rgba(148, 163, 184, 0.45) !important;
             border-radius: 16px !important;
             padding: 1rem !important;
-            background-color: #ffffff !important;
-            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important;
-        }
-
-        div[data-testid="stTextInput"] {
-            margin-bottom: 0.75rem !important;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25) !important;
         }
 
         div[data-testid="stTextInput"] label,
         div[data-testid="stNumberInput"] label,
         div[data-testid="stTextArea"] label,
-        div[data-testid="stSelectbox"] label {
-            color: #111827 !important;
-            font-weight: 700 !important;
+        div[data-testid="stSelectbox"] label,
+        div[data-testid="stDateInput"] label,
+        div[data-testid="stTimeInput"] label,
+        label {
+            color: #f9fafb !important;
+            font-weight: 600 !important;
         }
 
         div[data-testid="stTextInput"] div[data-baseweb="input"],
         div[data-testid="stNumberInput"] div[data-baseweb="input"],
         div[data-testid="stDateInput"] div[data-baseweb="input"],
         div[data-testid="stTimeInput"] div[data-baseweb="input"] {
-            background-color: #ffffff !important;
-            border: 2px solid #475569 !important;
-            border-radius: 12px !important;
-            box-shadow: 0 2px 5px rgba(15, 23, 42, 0.12) !important;
-            min-height: 48px !important;
+            background-color: #1f2937 !important;
+            border: 1.8px solid #64748b !important;
+            border-radius: 11px !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
         }
 
-        div[data-testid="stTextInput"] div[data-baseweb="base-input"],
-        div[data-testid="stNumberInput"] div[data-baseweb="base-input"] {
-            background-color: #ffffff !important;
-            border-radius: 12px !important;
-        }
-
+        div[data-testid="stTextInput"] div[data-baseweb="input"] input,
+        div[data-testid="stNumberInput"] div[data-baseweb="input"] input,
+        div[data-testid="stDateInput"] div[data-baseweb="input"] input,
+        div[data-testid="stTimeInput"] div[data-baseweb="input"] input,
         div[data-testid="stTextInput"] input,
         div[data-testid="stNumberInput"] input,
         div[data-testid="stDateInput"] input,
         div[data-testid="stTimeInput"] input {
-            background-color: #ffffff !important;
-            color: #0f172a !important;
-            border: 2px solid #475569 !important;
-            border-radius: 12px !important;
-            min-height: 48px !important;
-            padding-left: 0.85rem !important;
-            box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.10) !important;
+            background-color: #1f2937 !important;
+            color: #f9fafb !important;
+            border-radius: 11px !important;
         }
 
-        div[data-testid="stTextInput"] input:hover,
-        div[data-testid="stNumberInput"] input:hover,
-        div[data-testid="stDateInput"] input:hover,
-        div[data-testid="stTimeInput"] input:hover {
-            border-color: #1e293b !important;
-            background-color: #f8fafc !important;
-        }
-
-        div[data-testid="stTextInput"] input:focus,
-        div[data-testid="stNumberInput"] input:focus,
-        div[data-testid="stDateInput"] input:focus,
-        div[data-testid="stTimeInput"] input:focus {
-            border: 3px solid #ef4444 !important;
-            outline: none !important;
-            background-color: #ffffff !important;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.20) !important;
+        div[data-testid="stTextInput"] div[data-baseweb="input"]:hover,
+        div[data-testid="stNumberInput"] div[data-baseweb="input"]:hover,
+        div[data-testid="stDateInput"] div[data-baseweb="input"]:hover,
+        div[data-testid="stTimeInput"] div[data-baseweb="input"]:hover {
+            border-color: #94a3b8 !important;
         }
 
         div[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within,
         div[data-testid="stNumberInput"] div[data-baseweb="input"]:focus-within,
         div[data-testid="stDateInput"] div[data-baseweb="input"]:focus-within,
         div[data-testid="stTimeInput"] div[data-baseweb="input"]:focus-within {
-            border: 3px solid #ef4444 !important;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.20) !important;
+            border: 2px solid #f87171 !important;
+            box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18) !important;
         }
 
         div[data-testid="stTextArea"] div[data-baseweb="textarea"] {
-            background-color: #ffffff !important;
-            border: 2px solid #475569 !important;
-            border-radius: 12px !important;
-            box-shadow: 0 2px 5px rgba(15, 23, 42, 0.12) !important;
+            background-color: #1f2937 !important;
+            border: 1.8px solid #64748b !important;
+            border-radius: 11px !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
         }
 
+        div[data-testid="stTextArea"] div[data-baseweb="textarea"] textarea,
         div[data-testid="stTextArea"] textarea {
-            background-color: #ffffff !important;
-            color: #0f172a !important;
-            border: 2px solid #475569 !important;
-            border-radius: 12px !important;
-            box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.10) !important;
+            background-color: #1f2937 !important;
+            color: #f9fafb !important;
+            border-radius: 11px !important;
         }
 
-        div[data-testid="stTextArea"] textarea:focus {
-            border: 3px solid #ef4444 !important;
-            outline: none !important;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.20) !important;
+        div[data-testid="stTextArea"] div[data-baseweb="textarea"]:focus-within {
+            border: 2px solid #f87171 !important;
+            box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18) !important;
         }
 
         div[data-baseweb="select"] > div {
-            background-color: #ffffff !important;
-            border: 2px solid #475569 !important;
-            border-radius: 12px !important;
-            box-shadow: 0 2px 5px rgba(15, 23, 42, 0.12) !important;
+            background-color: #1f2937 !important;
+            color: #f9fafb !important;
+            border: 1.8px solid #64748b !important;
+            border-radius: 11px !important;
+        }
+
+        div[data-baseweb="select"] span {
+            color: #f9fafb !important;
         }
 
         input,
         textarea {
-            caret-color: #ef4444 !important;
+            caret-color: #f87171 !important;
+        }
+
+        /* =========================
+           Buttons
+        ========================= */
+        button {
+            border-radius: 11px !important;
         }
 
         div[data-testid="stForm"] button {
-            border: 2px solid #475569 !important;
-            border-radius: 12px !important;
-            background-color: #ffffff !important;
-            color: #111827 !important;
-            font-weight: 700 !important;
+            background-color: #1f2937 !important;
+            color: #f9fafb !important;
+            border: 1.8px solid #64748b !important;
+            font-weight: 600 !important;
         }
 
         div[data-testid="stForm"] button:hover {
-            border-color: #ef4444 !important;
-            color: #ef4444 !important;
-            background-color: #fff5f5 !important;
+            border-color: #f87171 !important;
+            color: #f87171 !important;
+        }
+
+        div[data-testid="stButton"] button {
+            background-color: #1f2937 !important;
+            color: #f9fafb !important;
+            border: 1px solid rgba(148, 163, 184, 0.35) !important;
+        }
+
+        div[data-testid="stButton"] button:hover {
+            border-color: #f87171 !important;
+            color: #f87171 !important;
         }
 
         /* =========================
@@ -261,12 +252,12 @@ def apply_custom_css():
             font-size: 2.4rem;
             font-weight: 800;
             margin-bottom: 0.4rem;
-            color: #1f2937;
+            color: #f9fafb !important;
         }
 
         .login-subtitle {
             text-align: center;
-            color: #6b7280;
+            color: #9ca3af !important;
             font-size: 1rem;
             margin-bottom: 2rem;
         }
@@ -291,11 +282,11 @@ def apply_custom_css():
             font-size: 2rem;
             font-weight: 800;
             margin: 0;
-            color: #1f2937;
+            color: #f9fafb !important;
         }
 
         .app-header-subtitle {
-            color: #6b7280;
+            color: #9ca3af !important;
             font-size: 0.95rem;
             margin-top: 0.2rem;
         }
@@ -306,8 +297,8 @@ def apply_custom_css():
         .user-badge {
             padding: 0.85rem;
             border-radius: 14px;
-            border: 1px solid rgba(31, 41, 55, 0.18);
-            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            background: rgba(17, 24, 39, 0.85);
             margin-bottom: 1rem;
         }
 
@@ -323,7 +314,7 @@ def apply_custom_css():
 
         .user-label {
             font-size: 0.75rem;
-            color: #6b7280;
+            color: #9ca3af;
             text-transform: uppercase;
             letter-spacing: 0.04rem;
         }
@@ -331,21 +322,24 @@ def apply_custom_css():
         .user-value {
             font-size: 0.95rem;
             font-weight: 600;
-            color: #1f2937;
+            color: #f9fafb;
         }
 
         /* =========================
            Sidebar Navigation Buttons
         ========================= */
         section[data-testid="stSidebar"] button {
+            background-color: #1f2937 !important;
+            color: #f9fafb !important;
             border-radius: 10px !important;
-            border: 1px solid rgba(31, 41, 55, 0.18) !important;
+            border: 1px solid rgba(148, 163, 184, 0.25) !important;
             text-align: left !important;
             justify-content: flex-start !important;
         }
 
         section[data-testid="stSidebar"] button:hover {
-            border-color: rgba(255, 75, 75, 0.7) !important;
+            border-color: rgba(248, 113, 113, 0.8) !important;
+            color: #f87171 !important;
         }
 
         /* =========================
@@ -355,7 +349,7 @@ def apply_custom_css():
             padding: 0.3rem 0.7rem;
             border-radius: 999px;
             background: rgba(255, 75, 75, 0.15);
-            color: #ff4b4b;
+            color: #ff6b6b;
             font-weight: 700;
         }
 
@@ -363,7 +357,7 @@ def apply_custom_css():
             padding: 0.3rem 0.7rem;
             border-radius: 999px;
             background: rgba(255, 193, 7, 0.15);
-            color: #d99a00;
+            color: #fbbf24;
             font-weight: 700;
         }
 
@@ -371,7 +365,7 @@ def apply_custom_css():
             padding: 0.3rem 0.7rem;
             border-radius: 999px;
             background: rgba(40, 167, 69, 0.15);
-            color: #28a745;
+            color: #4ade80;
             font-weight: 700;
         }
 
@@ -389,156 +383,44 @@ def apply_custom_css():
         .legend-item {
             padding: 0.35rem 0.75rem;
             border-radius: 999px;
-            border: 1px solid rgba(31, 41, 55, 0.18);
+            border: 1px solid rgba(148, 163, 184, 0.25);
             font-size: 0.85rem;
             font-weight: 600;
         }
 
         .legend-high {
             background: rgba(255, 75, 75, 0.15);
-            color: #ff4b4b;
+            color: #ff6b6b;
         }
 
         .legend-medium {
             background: rgba(255, 193, 7, 0.15);
-            color: #d99a00;
+            color: #fbbf24;
         }
 
         .legend-low {
             background: rgba(40, 167, 69, 0.15);
-            color: #28a745;
+            color: #4ade80;
         }
 
         .legend-alert {
             background: rgba(255, 140, 0, 0.15);
-            color: #ff8c00;
+            color: #fb923c;
         }
 
         /* =========================
-           Device Dark Mode
+           Tables / Dataframes
         ========================= */
-        @media (prefers-color-scheme: dark) {
-            html,
-            body,
-            [data-testid="stAppViewContainer"],
-            [data-testid="stApp"] {
-                background-color: #0f172a !important;
-                color: #e5e7eb !important;
-            }
+        [data-testid="stDataFrame"] {
+            background-color: #111827 !important;
+            color: #f9fafb !important;
+        }
 
-            [data-testid="stHeader"],
-            header {
-                background: transparent !important;
-            }
-
-            [data-testid="stSidebar"] {
-                background-color: #111827 !important;
-            }
-
-            .login-title,
-            .app-header-title {
-                color: #f9fafb !important;
-            }
-
-            .login-subtitle,
-            .app-header-subtitle,
-            .small-muted,
-            .metric-title,
-            .user-label {
-                color: #9ca3af !important;
-            }
-
-            .section-card,
-            .metric-card,
-            .user-badge {
-                background: rgba(17, 24, 39, 0.85) !important;
-                border: 1px solid rgba(148, 163, 184, 0.25) !important;
-            }
-
-            .user-value {
-                color: #f9fafb !important;
-            }
-
-            div[data-testid="stForm"] {
-                background-color: rgba(17, 24, 39, 0.90) !important;
-                border: 2px solid rgba(148, 163, 184, 0.50) !important;
-                box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25) !important;
-            }
-
-            div[data-testid="stTextInput"] div[data-baseweb="input"],
-            div[data-testid="stNumberInput"] div[data-baseweb="input"],
-            div[data-testid="stDateInput"] div[data-baseweb="input"],
-            div[data-testid="stTimeInput"] div[data-baseweb="input"] {
-                background-color: #1f2937 !important;
-                border: 2px solid #64748b !important;
-                box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25) !important;
-            }
-
-            div[data-testid="stTextInput"] div[data-baseweb="base-input"],
-            div[data-testid="stNumberInput"] div[data-baseweb="base-input"] {
-                background-color: #1f2937 !important;
-            }
-
-            div[data-testid="stTextInput"] input,
-            div[data-testid="stNumberInput"] input,
-            div[data-testid="stDateInput"] input,
-            div[data-testid="stTimeInput"] input {
-                background-color: #1f2937 !important;
-                color: #f9fafb !important;
-                border: 2px solid #64748b !important;
-            }
-
-            div[data-testid="stTextInput"] input:focus,
-            div[data-testid="stNumberInput"] input:focus,
-            div[data-testid="stDateInput"] input:focus,
-            div[data-testid="stTimeInput"] input:focus {
-                border: 3px solid #f87171 !important;
-                box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18) !important;
-            }
-
-            div[data-testid="stTextArea"] div[data-baseweb="textarea"],
-            div[data-testid="stTextArea"] textarea {
-                background-color: #1f2937 !important;
-                color: #f9fafb !important;
-                border: 2px solid #64748b !important;
-            }
-
-            div[data-baseweb="select"] > div {
-                background-color: #1f2937 !important;
-                color: #f9fafb !important;
-                border: 2px solid #64748b !important;
-            }
-
-            div[data-testid="stForm"] button {
-                background-color: #1f2937 !important;
-                color: #f9fafb !important;
-                border: 2px solid #64748b !important;
-            }
-
-            div[data-testid="stForm"] button:hover {
-                border-color: #f87171 !important;
-                color: #f87171 !important;
-            }
-
-            label {
-                color: #f9fafb !important;
-            }
-
-            p,
-            span,
-            div {
-                color: inherit;
-            }
-
-            section[data-testid="stSidebar"] button {
-                background-color: #1f2937 !important;
-                color: #f9fafb !important;
-                border: 1px solid rgba(148, 163, 184, 0.25) !important;
-            }
-
-            section[data-testid="stSidebar"] button:hover {
-                border-color: rgba(248, 113, 113, 0.8) !important;
-            }
+        /* =========================
+           Streamlit Messages
+        ========================= */
+        div[data-testid="stAlert"] {
+            border-radius: 12px !important;
         }
 
         /* =========================
