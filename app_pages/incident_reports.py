@@ -62,14 +62,7 @@ def reverse_geocode_location(latitude, longitude):
         return "", "", ""
 
 
-def show_incident_reports():
-    show_page_title(
-        "Incident Reports",
-        "Encode earthquake-related damage, casualty, and rescue information."
-    )
-
-    form_key = f"incident_report_form_{st.session_state.incident_form_counter}"
-
+def initialize_incident_session_state():
     if "map_pin_latitude" not in st.session_state:
         st.session_state.map_pin_latitude = 14.520000
 
@@ -87,6 +80,26 @@ def show_incident_reports():
 
     if "incident_full_address" not in st.session_state:
         st.session_state.incident_full_address = ""
+
+    if "incident_prefill_remarks" not in st.session_state:
+        st.session_state.incident_prefill_remarks = ""
+
+
+def show_incident_reports():
+    show_page_title(
+        "Incident Reports",
+        "Encode earthquake-related damage, casualty, and rescue information."
+    )
+
+    initialize_incident_session_state()
+
+    form_key = f"incident_report_form_{st.session_state.incident_form_counter}"
+
+    if st.session_state.incident_prefill_remarks:
+        st.info(
+            "This incident report was prepared from an earthquake alert. "
+            "Please validate and complete the field details before submission."
+        )
 
     show_section_title("Location Input Method")
 
@@ -324,11 +337,14 @@ def show_incident_reports():
                     "Partially Blocked",
                     "Not Passable",
                     "Unknown"
-                ]
+                ],
+                index=3
             )
 
         remarks = st.text_area(
-            "Remarks / Situation Description"
+            "Remarks / Situation Description",
+            value=st.session_state.incident_prefill_remarks,
+            height=180
         )
 
         uploaded_photos = st.file_uploader(
@@ -398,6 +414,7 @@ def show_incident_reports():
             st.session_state.incident_barangay = ""
             st.session_state.incident_municipality = ""
             st.session_state.incident_full_address = ""
+            st.session_state.incident_prefill_remarks = ""
 
             reset_incident_form(st)
             st.rerun()
