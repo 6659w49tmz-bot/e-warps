@@ -12,17 +12,14 @@ def apply_custom_css():
         """
         <style>
         /* =========================
-           Hide Streamlit Cloud UI
+           Hide only unnecessary Streamlit Cloud UI
+           Do NOT hide header because sidebar button is there
         ========================= */
         #MainMenu {
             visibility: hidden;
         }
 
         footer {
-            visibility: hidden;
-        }
-
-        header {
             visibility: hidden;
         }
 
@@ -37,11 +34,6 @@ def apply_custom_css():
         }
 
         [data-testid="stStatusWidget"] {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        [data-testid="stHeader"] {
             display: none !important;
             visibility: hidden !important;
         }
@@ -66,7 +58,6 @@ def apply_custom_css():
             visibility: hidden !important;
         }
 
-        /* Hide GitHub/Fork/toolbar-like buttons */
         a[href*="github.com"] {
             display: none !important;
             visibility: hidden !important;
@@ -87,9 +78,21 @@ def apply_custom_css():
             visibility: hidden !important;
         }
 
+        [data-testid="stHeader"] {
+            background: transparent !important;
+        }
+
+        header {
+            background: transparent !important;
+        }
+
         /* =========================
-           General App Styling
+           Base App Styling
         ========================= */
+        :root {
+            color-scheme: light dark;
+        }
+
         .main {
             padding-top: 0rem;
         }
@@ -105,35 +108,98 @@ def apply_custom_css():
         }
 
         .small-muted {
-            color: #8a8f98;
+            color: #6b7280;
             font-size: 0.9rem;
         }
 
         .section-card {
             padding: 1.2rem;
             border-radius: 16px;
-            border: 1px solid rgba(128, 128, 128, 0.2);
-            background: rgba(250, 250, 250, 0.04);
+            border: 1px solid rgba(31, 41, 55, 0.18);
+            background: rgba(255, 255, 255, 0.75);
             margin-bottom: 1rem;
         }
 
         .metric-card {
             padding: 1rem;
             border-radius: 16px;
-            border: 1px solid rgba(128, 128, 128, 0.2);
-            background: rgba(250, 250, 250, 0.04);
+            border: 1px solid rgba(31, 41, 55, 0.18);
+            background: rgba(255, 255, 255, 0.75);
             text-align: center;
         }
 
         .metric-title {
             font-size: 0.9rem;
-            color: #8a8f98;
+            color: #6b7280;
             margin-bottom: 0.25rem;
         }
 
         .metric-value {
             font-size: 1.8rem;
             font-weight: 700;
+        }
+
+        /* =========================
+           Input / Form Visibility Fix
+        ========================= */
+        div[data-testid="stTextInput"] div[data-baseweb="input"],
+        div[data-testid="stNumberInput"] div[data-baseweb="input"] {
+            border: 1.8px solid #94a3b8 !important;
+            border-radius: 11px !important;
+            background-color: #ffffff !important;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08) !important;
+        }
+
+        div[data-testid="stTextInput"] div[data-baseweb="input"] input,
+        div[data-testid="stNumberInput"] div[data-baseweb="input"] input {
+            background-color: #ffffff !important;
+            color: #111827 !important;
+            border-radius: 11px !important;
+        }
+
+        div[data-testid="stTextInput"] div[data-baseweb="input"]:hover,
+        div[data-testid="stNumberInput"] div[data-baseweb="input"]:hover {
+            border-color: #64748b !important;
+        }
+
+        div[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within,
+        div[data-testid="stNumberInput"] div[data-baseweb="input"]:focus-within {
+            border: 2px solid #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16) !important;
+        }
+
+        div[data-testid="stTextArea"] div[data-baseweb="textarea"] {
+            border: 1.8px solid #94a3b8 !important;
+            border-radius: 11px !important;
+            background-color: #ffffff !important;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08) !important;
+        }
+
+        div[data-testid="stTextArea"] div[data-baseweb="textarea"] textarea {
+            background-color: #ffffff !important;
+            color: #111827 !important;
+            border-radius: 11px !important;
+        }
+
+        div[data-testid="stTextArea"] div[data-baseweb="textarea"]:focus-within {
+            border: 2px solid #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16) !important;
+        }
+
+        div[data-baseweb="select"] > div {
+            border: 1.8px solid #94a3b8 !important;
+            border-radius: 11px !important;
+            background-color: #ffffff !important;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08) !important;
+        }
+
+        input,
+        textarea {
+            caret-color: #ef4444 !important;
+        }
+
+        label {
+            font-weight: 600 !important;
         }
 
         /* =========================
@@ -157,13 +223,35 @@ def apply_custom_css():
             font-size: 2.4rem;
             font-weight: 800;
             margin-bottom: 0.4rem;
+            color: #1f2937;
         }
 
         .login-subtitle {
             text-align: center;
-            color: #8a8f98;
+            color: #6b7280;
             font-size: 1rem;
             margin-bottom: 2rem;
+        }
+
+        div[data-testid="stForm"] {
+            border: 1.8px solid #cbd5e1 !important;
+            border-radius: 16px !important;
+            padding: 1rem !important;
+            background-color: rgba(255, 255, 255, 0.92) !important;
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08) !important;
+        }
+
+        div[data-testid="stForm"] button {
+            border: 1.8px solid #94a3b8 !important;
+            border-radius: 11px !important;
+            background-color: #ffffff !important;
+            color: #111827 !important;
+            font-weight: 600 !important;
+        }
+
+        div[data-testid="stForm"] button:hover {
+            border-color: #ef4444 !important;
+            color: #ef4444 !important;
         }
 
         /* =========================
@@ -186,10 +274,11 @@ def apply_custom_css():
             font-size: 2rem;
             font-weight: 800;
             margin: 0;
+            color: #1f2937;
         }
 
         .app-header-subtitle {
-            color: #8a8f98;
+            color: #6b7280;
             font-size: 0.95rem;
             margin-top: 0.2rem;
         }
@@ -200,8 +289,8 @@ def apply_custom_css():
         .user-badge {
             padding: 0.85rem;
             border-radius: 14px;
-            border: 1px solid rgba(128, 128, 128, 0.25);
-            background: rgba(250, 250, 250, 0.05);
+            border: 1px solid rgba(31, 41, 55, 0.18);
+            background: rgba(255, 255, 255, 0.75);
             margin-bottom: 1rem;
         }
 
@@ -217,7 +306,7 @@ def apply_custom_css():
 
         .user-label {
             font-size: 0.75rem;
-            color: #8a8f98;
+            color: #6b7280;
             text-transform: uppercase;
             letter-spacing: 0.04rem;
         }
@@ -225,7 +314,7 @@ def apply_custom_css():
         .user-value {
             font-size: 0.95rem;
             font-weight: 600;
-            color: inherit;
+            color: #1f2937;
         }
 
         /* =========================
@@ -233,7 +322,7 @@ def apply_custom_css():
         ========================= */
         section[data-testid="stSidebar"] button {
             border-radius: 10px !important;
-            border: 1px solid rgba(128, 128, 128, 0.25) !important;
+            border: 1px solid rgba(31, 41, 55, 0.18) !important;
             text-align: left !important;
             justify-content: flex-start !important;
         }
@@ -283,7 +372,7 @@ def apply_custom_css():
         .legend-item {
             padding: 0.35rem 0.75rem;
             border-radius: 999px;
-            border: 1px solid rgba(128, 128, 128, 0.25);
+            border: 1px solid rgba(31, 41, 55, 0.18);
             font-size: 0.85rem;
             font-weight: 600;
         }
@@ -306,6 +395,129 @@ def apply_custom_css():
         .legend-alert {
             background: rgba(255, 140, 0, 0.15);
             color: #ff8c00;
+        }
+
+        /* =========================
+           Device Dark Mode
+        ========================= */
+        @media (prefers-color-scheme: dark) {
+            html,
+            body,
+            [data-testid="stAppViewContainer"],
+            [data-testid="stApp"] {
+                background-color: #0f172a !important;
+                color: #e5e7eb !important;
+            }
+
+            [data-testid="stHeader"] {
+                background: transparent !important;
+            }
+
+            header {
+                background: transparent !important;
+            }
+
+            [data-testid="stSidebar"] {
+                background-color: #111827 !important;
+            }
+
+            .login-title,
+            .app-header-title {
+                color: #f9fafb !important;
+            }
+
+            .login-subtitle,
+            .app-header-subtitle,
+            .small-muted,
+            .metric-title,
+            .user-label {
+                color: #9ca3af !important;
+            }
+
+            .section-card,
+            .metric-card,
+            .user-badge {
+                background: rgba(17, 24, 39, 0.85) !important;
+                border: 1px solid rgba(148, 163, 184, 0.25) !important;
+            }
+
+            .user-value {
+                color: #f9fafb !important;
+            }
+
+            div[data-testid="stForm"] {
+                background-color: rgba(17, 24, 39, 0.90) !important;
+                border: 1.8px solid rgba(148, 163, 184, 0.45) !important;
+                box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25) !important;
+            }
+
+            div[data-testid="stTextInput"] div[data-baseweb="input"],
+            div[data-testid="stNumberInput"] div[data-baseweb="input"] {
+                background-color: #1f2937 !important;
+                border: 1.8px solid #64748b !important;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+            }
+
+            div[data-testid="stTextInput"] div[data-baseweb="input"] input,
+            div[data-testid="stNumberInput"] div[data-baseweb="input"] input {
+                background-color: #1f2937 !important;
+                color: #f9fafb !important;
+            }
+
+            div[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within,
+            div[data-testid="stNumberInput"] div[data-baseweb="input"]:focus-within {
+                border: 2px solid #f87171 !important;
+                box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18) !important;
+            }
+
+            div[data-testid="stTextArea"] div[data-baseweb="textarea"] {
+                background-color: #1f2937 !important;
+                border: 1.8px solid #64748b !important;
+            }
+
+            div[data-testid="stTextArea"] div[data-baseweb="textarea"] textarea {
+                background-color: #1f2937 !important;
+                color: #f9fafb !important;
+            }
+
+            div[data-baseweb="select"] > div {
+                background-color: #1f2937 !important;
+                color: #f9fafb !important;
+                border: 1.8px solid #64748b !important;
+            }
+
+            div[data-testid="stForm"] button {
+                background-color: #1f2937 !important;
+                color: #f9fafb !important;
+                border: 1.8px solid #64748b !important;
+            }
+
+            div[data-testid="stForm"] button:hover {
+                border-color: #f87171 !important;
+                color: #f87171 !important;
+            }
+
+            input,
+            textarea {
+                caret-color: #f87171 !important;
+            }
+
+            label,
+            p,
+            span,
+            div {
+                color: inherit;
+            }
+
+            section[data-testid="stSidebar"] button {
+                background-color: #1f2937 !important;
+                color: #f9fafb !important;
+                border: 1px solid rgba(148, 163, 184, 0.25) !important;
+            }
+
+            section[data-testid="stSidebar"] button:hover {
+                border-color: rgba(248, 113, 113, 0.8) !important;
+            }
         }
 
         /* =========================

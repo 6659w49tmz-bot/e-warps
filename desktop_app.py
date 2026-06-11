@@ -2,6 +2,8 @@ import webview
 
 
 APP_TITLE = "E-WARPS"
+
+# Normal mode keeps Streamlit sidebar controls visible.
 APP_URL = "https://jqzjrhs7bjxjm58r3yd2kb.streamlit.app"
 
 
@@ -16,7 +18,7 @@ def main():
         text_select=True
     )
 
-    webview.start()
+    webview.start(debug=False)
 
 
 if __name__ == "__main__":
